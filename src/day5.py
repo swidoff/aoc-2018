@@ -1,4 +1,6 @@
 import re
+from typing import Set
+
 
 def read_input() -> str:
     with open("../input/day5.txt") as file:
@@ -9,9 +11,12 @@ def react(ch1: str, ch2: str) -> bool:
     return ch1 != ch2 and (ch1.upper() == ch2 or ch1.lower() == ch2)
 
 
-def part1(line: str) -> int:
+def part1(line: str, ignore: Set[str]) -> int:
+    if ignore is None:
+        ignore = set()
+
     chars_removed = 1
-    chars = [c for c in line]
+    chars = [c for c in line if c not in ignore]
     while chars_removed > 0:
         chars_removed = 0
         i = 0
@@ -41,14 +46,12 @@ def test_part1():
 
 
 def part2(line: str):
-    return min(
-        part1(line.replace(chr(o), "").replace(chr(o).lower(), ""))
-        for o in range(ord('A'), ord('Z'))
-        if chr(o) in line
-    )
+    return min(part1(line, ignore={chr(o), chr(o).lower()}) for o in range(ord("A"), ord("Z")) if chr(o) in line)
+
 
 def test_part2_examples():
     assert part2("dabAcCaCBAcCcaDA") == 4
+
 
 def test_part2():
     print(part2(read_input()))
