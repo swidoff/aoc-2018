@@ -1,8 +1,8 @@
+from collections import defaultdict
 from typing import List, Tuple
 import re
 
 import toolz
-from toolz.tests.test_dicttoolz import defaultdict
 
 
 def read_input() -> List[str]:
