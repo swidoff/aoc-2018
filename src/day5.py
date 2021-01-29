@@ -1,4 +1,3 @@
-import re
 from typing import Set
 
 
@@ -11,7 +10,7 @@ def react(ch1: str, ch2: str) -> bool:
     return ch1 != ch2 and (ch1.upper() == ch2 or ch1.lower() == ch2)
 
 
-def part1(line: str, ignore: Set[str]) -> int:
+def part1(line: str, ignore: Set[str] = None) -> int:
     if ignore is None:
         ignore = set()
 
