@@ -34,7 +34,7 @@ def test_part1():
 
 
 def part2(players: int, last: int) -> int:
-    marbles = [ [-1, -1] for _ in range(last + 1)]
+    marbles = [[-1, -1] for _ in range(last + 1)]
     scores = [0] * players
     marbles[0] = [0, 0]
 
