@@ -81,7 +81,7 @@ def part1(lines: List[str], elf_attack: int = 3, debug: bool = False) -> Result:
 def part2(lines: List[str]) -> Result:
     elf_attack = 4
     while elf_attack < 100:
-        res = part1(lines, elf_attack, debug=elf_attack == 14)
+        res = part1(lines, elf_attack)
         print(elf_attack, res)
         if res.winner == "E" and res.losses == 0:
             return res
@@ -93,6 +93,7 @@ def next_move(start: Coord, unit_type: str, grid: List[List[str]]) -> Optional[C
     q = deque([[start]])
     seen = {start}
 
+    in_range = []
     while q:
         path = q.popleft()
         row, col = path[-1]
@@ -107,9 +108,19 @@ def next_move(start: Coord, unit_type: str, grid: List[List[str]]) -> Optional[C
                     q.append(new_path)
                     seen.add(new_coord)
                 elif not (grid_char == unit_type or grid_char == "#"):
-                    return path[1]
+                    in_range.append(path)
 
-    return None
+    if in_range:
+        shortest_len = min(len(p) for p in in_range)
+        shortest_paths = [p for p in in_range if len(p) == shortest_len]
+
+        chosen_point = sorted(p[-1] for p in shortest_paths)[0]
+        chosen_paths = [p for p in shortest_paths if p[-1] == chosen_point]
+
+        step = sorted(p[1] for p in chosen_paths)[0]
+        return step
+    else:
+        return None
 
 
 def adjacent(c1: Tuple[int, int], c2: Tuple[int, int]) -> bool:
@@ -146,6 +157,38 @@ def test_part1_example():
 #######
 """.splitlines()
     assert part1(lines).score == 39514
+
+    lines = """#######   
+#E.G#.#
+#.#G..#
+#G.#.G#   
+#G..#.#
+#...E.#
+#######
+""".splitlines()
+    assert part1(lines).score == 27755
+
+    lines = """#######
+#.E...#   
+#.#..G#
+#.###.#   
+#E#G#G#   
+#...#G#
+####### 
+""".splitlines()
+    assert part1(lines).score == 28944
+
+    lines = """#########   
+#G......#
+#.E.#...#
+#..##..G#
+#...##..#   
+#...#...#
+#.G...G.#   
+#.....G.#   
+#########
+""".splitlines()
+    assert part1(lines).score == 18740
 
 
 def test_part1():
