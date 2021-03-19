@@ -10,6 +10,7 @@ def read_input_part2() -> List[str]:
     with open("../input/day16-2.txt") as file:
         return [line.strip() for line in file.readlines()]
 
+
 def to_list(line: str, sep: str = ",") -> List[int]:
     return list(map(int, line.split(sep + " ")))
 
@@ -151,7 +152,6 @@ def part2() -> int:
     return registers[0]
 
 
-
 def test_part1_examples():
     actual = find_candidate_names([3, 2, 1, 1], [2, 1, 2], [3, 2, 2, 1])
     assert actual == ["addi", "mulr", "seti"]
@@ -159,6 +159,7 @@ def test_part1_examples():
 
 def test_part1():
     print(part1())
+
 
 def test_part2():
     print(part2())
