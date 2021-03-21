@@ -63,24 +63,14 @@ seti 9 0 5
 """.splitlines()
     ip_register, instructions = parse_input(example)
     iterations, registers = part1(ip_register, instructions)
-    assert registers[-1][0] == 6
+    assert registers[-1][0][0] == 6
 
 
 def test_part1():
     lines = read_input()
     ip_register, instructions = parse_input(lines)
     iterations, registers = part1(ip_register, instructions)
-    assert registers[-1][0] == 2160
-    print(iterations)
-    for i in range(100):
-        print(registers[-100 + i])
-
-
-def test_part2():
-    lines = read_input()
-    ip_register, instructions = parse_input(lines)
-    print()
-    print(part1(ip_register, instructions, register0=1, max_iterations=10000, debug=True))
+    assert registers[-1][0][0] == 2160
 
 
 """
@@ -141,13 +131,17 @@ def prog(part2: bool) -> int:
         reg3 += reg4
 
     reg5 = 1
+    print(reg3)
     while reg5 <= reg3:
-        reg2 = 1
-        while reg2 <= reg3:
-            if reg5 * reg2 == reg3:
-                reg0 += reg5
+        if reg3 % reg5 == 0:
+            reg0 += reg5
 
-            reg2 += 1
+        # reg2 = 1
+        # while reg2 <= reg3:
+        #     if reg5 * reg2 == reg3:
+        #         reg0 += reg5
+        #
+        #     reg2 += 1
 
         reg5 += 1
 
@@ -158,5 +152,5 @@ def test_prog_part1():
     assert prog(part2=False) == 2160
 
 
-def test_prog_part2():
-    print(prog(part2=True))
+def test_part2():
+    assert prog(part2=True) == 25945920
