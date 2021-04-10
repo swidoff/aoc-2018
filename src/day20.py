@@ -1,8 +1,7 @@
-import dataclasses
 from abc import ABC
 from collections import deque, defaultdict
 from dataclasses import dataclass
-from typing import Tuple, Dict, List, Set, Optional, Iterator
+from typing import Tuple, Dict, List, Set, Optional
 import re
 
 
@@ -58,7 +57,7 @@ def parse_expression(tokens: List[str]) -> Tuple[Optional[Regex], List[str]]:
         alternates = [alternate]
         while new_tokens[0] == "|":
             if new_tokens[1] == "":
-                alternate = Token("")
+                alternate = Sequence([Token("")])
                 new_tokens = new_tokens[2:]
             else:
                 alternate, new_tokens = parse_sequence(new_tokens[1:])
@@ -79,45 +78,27 @@ MOVE = {
 }
 
 
-def generate_paths(initial_seq: Sequence) -> List[List[str]]:
-    stack = [(initial_seq, [])]
-    res = []
+def make_graph(initial_seq: Sequence) -> Graph:
+    graph = defaultdict(set)
+    stack = [(initial_seq.steps, (0, 0))]
 
     while stack:
-        seq, path = stack.pop()
-        if seq.steps:
-            step, next_steps = seq.steps[0], seq.steps[1:]
+        steps, loc = stack.pop()
+        if steps:
+            step, next_steps = steps[0], steps[1:]
             if isinstance(step, Token):
-                new_path = path + [step.tok] if step.tok else path
-                stack.append((Sequence(next_steps), new_path))
+                for t in step.tok:
+                    dr, dc = MOVE[t]
+                    new_loc = (loc[0] + dr, loc[1] + dc)
+                    graph[loc].add(new_loc)
+                    graph[new_loc].add(loc)
+                    loc = new_loc
+                stack.append((next_steps, loc))
             elif isinstance(step, Sequence):
-                stack.append((Sequence(step.steps + next_steps), path))
+                stack.append((step.steps + next_steps, loc))
             elif isinstance(step, Alternate):
-                for alt in step.alt:
-                    stack.append((Sequence([alt] + next_steps), path))
-        else:
-            res.append(path)
-
-    return res
-
-
-def add_to_graph(tok: str, graph: Graph, loc: Coord) -> Coord:
-    for t in tok:
-        dr, dc = MOVE[t]
-        new_loc = (loc[0] + dr, loc[1] + dc)
-        graph[loc].add(new_loc)
-        graph[new_loc].add(loc)
-        loc = new_loc
-
-    return loc
-
-
-def make_graph(paths: List[List[str]]) -> Graph:
-    graph = defaultdict(set)
-    for path in paths:
-        loc = (0, 0)
-        for tok in path:
-            loc = add_to_graph(tok, graph, loc)
+                for alt in reversed(step.alt):
+                    stack.append((alt.steps + next_steps, loc))
 
     return graph
 
@@ -128,9 +109,9 @@ def max_doors(graph: Graph) -> int:
 
     while q:
         loc, steps = q.popleft()
+        new_steps = steps + 1
         for next_loc in graph[loc]:
             if next_loc not in seen:
-                new_steps = steps + 1
                 seen[next_loc] = new_steps
                 q.append((next_loc, new_steps))
 
@@ -139,8 +120,7 @@ def max_doors(graph: Graph) -> int:
 
 def part1(regex: str):
     seq = parse_regex(regex)
-    paths = generate_paths(seq)
-    graph = make_graph(paths)
+    graph = make_graph(seq)
     return max_doors(graph)
 
 
@@ -154,5 +134,4 @@ def test_part1_examples():
 
 def test_part1():
     regex = read_input()
-    print(regex)
     print(part1(regex))
