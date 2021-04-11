@@ -96,7 +96,7 @@ def make_graph(initial_seq: Sequence) -> Graph:
 
 
 @singledispatch
-def add_to_graph(r: Regex, coords: Set[Coord], graph: Graph) -> Set[Coord]:
+def add_to_graph(_r: Regex, _coords: Set[Coord], _graph: Graph) -> Set[Coord]:
     pass
 
 
