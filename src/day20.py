@@ -1,3 +1,4 @@
+import math
 from abc import ABC
 from collections import deque, defaultdict
 from dataclasses import dataclass
@@ -112,10 +113,9 @@ def make_graph(initial_seq: Sequence) -> Graph:
     return graph
 
 
-def max_doors(graph: Graph) -> int:
+def shortest_paths(graph):
     q = deque([((0, 0), 0)])
     seen = {(0, 0): 0}
-
     while q:
         loc, steps = q.popleft()
         new_steps = steps + 1
@@ -123,8 +123,7 @@ def max_doors(graph: Graph) -> int:
             if next_loc not in seen:
                 seen[next_loc] = new_steps
                 q.append((next_loc, new_steps))
-
-    return max(seen.values())
+    return seen
 
 
 def print_graph(graph: Graph):
@@ -159,17 +158,25 @@ def print_graph(graph: Graph):
             door_char = "-" if door_coord in graph[coord] else "#"
             print(door_char, end="")
             print("#", end="")
-            coord = door_coord
         print()
 
     print()
 
+
 def part1(regex: str):
     seq = parse_regex(regex)
-    # assert f"^{str(seq)}$" == regex
     graph = make_graph(seq)
-    print_graph(graph)
-    return max_doors(graph)
+    # print_graph(graph)
+    seen = shortest_paths(graph)
+    return max(seen.values())
+
+
+def part2(regex: str):
+    seq = parse_regex(regex)
+    graph = make_graph(seq)
+    # print_graph(graph)
+    seen = shortest_paths(graph)
+    return sum(1 for v in seen.values() if v >= 1000)
 
 
 def test_part1_examples():
@@ -182,4 +189,9 @@ def test_part1_examples():
 
 def test_part1():
     regex = read_input()
-    print(part1(regex))
+    assert part1(regex) == 3872
+
+
+def test_part2():
+    regex = read_input()
+    print(part2(regex))
