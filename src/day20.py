@@ -19,20 +19,29 @@ class Regex(ABC):
 class Token(Regex):
     tok: str
 
+    def __str__(self) -> str:
+        return self.tok
+
 
 @dataclass
 class Sequence(Regex):
     steps: List[Regex]
+
+    def __str__(self) -> str:
+        return "".join(map(str, self.steps))
 
 
 @dataclass
 class Alternate(Regex):
     alt: List[Sequence]
 
+    def __str__(self) -> str:
+        return "(" + "|".join(map(str, self.alt)) + ")"
+
 
 def parse_regex(regex: str) -> Sequence:
     tokens = re.split(r"([(|)])", regex[1:-1])
-    res, _ = parse_sequence(tokens)
+    res, _ = parse_sequence([t for t in tokens if t != ""])
     return res
 
 
@@ -56,9 +65,9 @@ def parse_expression(tokens: List[str]) -> Tuple[Optional[Regex], List[str]]:
         alternate, new_tokens = parse_sequence(tokens[1:])
         alternates = [alternate]
         while new_tokens[0] == "|":
-            if new_tokens[1] == "":
+            if new_tokens[1] == ")":
                 alternate = Sequence([Token("")])
-                new_tokens = new_tokens[2:]
+                new_tokens = new_tokens[1:]
             else:
                 alternate, new_tokens = parse_sequence(new_tokens[1:])
             alternates.append(alternate)
@@ -97,7 +106,7 @@ def make_graph(initial_seq: Sequence) -> Graph:
             elif isinstance(step, Sequence):
                 stack.append((step.steps + next_steps, loc))
             elif isinstance(step, Alternate):
-                for alt in reversed(step.alt):
+                for alt in step.alt:
                     stack.append((alt.steps + next_steps, loc))
 
     return graph
@@ -118,9 +127,48 @@ def max_doors(graph: Graph) -> int:
     return max(seen.values())
 
 
+def print_graph(graph: Graph):
+    min_r = min(r for r, _ in graph.keys())
+    max_r = max(r for r, _ in graph.keys())
+    min_c = min(c for _, c in graph.keys())
+    max_c = max(c for _, c in graph.keys())
+    num_cols = max_c - min_c + 1
+
+    print()
+    for _ in range(2 * num_cols + 1):
+        print("#", end="")
+    print()
+
+    origin = (0, 0)
+    for r in range(min_r, max_r + 1):
+        print("#", end="")
+        for c in range(min_c, max_c + 1):
+            coord = (r, c)
+            room_char = "X" if coord == origin else "."
+            print(room_char, end="")
+
+            door_coord = (r, c + 1)
+            door_char = "|" if door_coord in graph[coord] else "#"
+            print(door_char, end="")
+
+        print()
+        print("#", end="")
+        for c in range(min_c, max_c + 1):
+            coord = (r, c)
+            door_coord = (r + 1, c)
+            door_char = "-" if door_coord in graph[coord] else "#"
+            print(door_char, end="")
+            print("#", end="")
+            coord = door_coord
+        print()
+
+    print()
+
 def part1(regex: str):
     seq = parse_regex(regex)
+    # assert f"^{str(seq)}$" == regex
     graph = make_graph(seq)
+    print_graph(graph)
     return max_doors(graph)
 
 
