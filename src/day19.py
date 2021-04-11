@@ -23,7 +23,7 @@ def parse_input(lines: List[str]) -> Tuple[int, List[Instruction]]:
     return ip, ls
 
 
-def part1(
+def evaluate(
     ip_register: int,
     instructions: List[Instruction],
     register0: int = 0,
@@ -62,14 +62,14 @@ seti 8 0 4
 seti 9 0 5
 """.splitlines()
     ip_register, instructions = parse_input(example)
-    iterations, registers = part1(ip_register, instructions)
+    iterations, registers = evaluate(ip_register, instructions)
     assert registers[-1][0][0] == 6
 
 
 def test_part1():
     lines = read_input()
     ip_register, instructions = parse_input(lines)
-    iterations, registers = part1(ip_register, instructions)
+    iterations, registers = evaluate(ip_register, instructions)
     assert registers[-1][0][0] == 2160
 
 
