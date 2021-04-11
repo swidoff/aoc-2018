@@ -2,6 +2,7 @@ import math
 from abc import ABC
 from collections import deque, defaultdict
 from dataclasses import dataclass
+from functools import singledispatch
 from typing import Tuple, Dict, List, Set, Optional
 import re
 
@@ -90,27 +91,45 @@ MOVE = {
 
 def make_graph(initial_seq: Sequence) -> Graph:
     graph = defaultdict(set)
-    stack = [(initial_seq.steps, (0, 0))]
-
-    while stack:
-        steps, loc = stack.pop()
-        if steps:
-            step, next_steps = steps[0], steps[1:]
-            if isinstance(step, Token):
-                for t in step.tok:
-                    dr, dc = MOVE[t]
-                    new_loc = (loc[0] + dr, loc[1] + dc)
-                    graph[loc].add(new_loc)
-                    graph[new_loc].add(loc)
-                    loc = new_loc
-                stack.append((next_steps, loc))
-            elif isinstance(step, Sequence):
-                stack.append((step.steps + next_steps, loc))
-            elif isinstance(step, Alternate):
-                for alt in step.alt:
-                    stack.append((alt.steps + next_steps, loc))
-
+    add_to_graph(initial_seq, {(0, 0)}, graph)
     return graph
+
+
+@singledispatch
+def add_to_graph(r: Regex, coords: Set[Coord], graph: Graph) -> Set[Coord]:
+    pass
+
+
+@add_to_graph.register
+def _(t: Token, coords: Set[Coord], graph: Graph) -> Set[Coord]:
+    res = set()
+    for loc in coords:
+        for c in t.tok:
+            dr, dc = MOVE[c]
+            new_loc = (loc[0] + dr, loc[1] + dc)
+            graph[loc].add(new_loc)
+            graph[new_loc].add(loc)
+            loc = new_loc
+        res.add(loc)
+
+    return res
+
+
+@add_to_graph.register
+def _(s: Sequence, coords: Set[Coord], graph: Graph) -> Set[Coord]:
+    for step in s.steps:
+        coords = add_to_graph(step, coords, graph)
+
+    return coords
+
+
+@add_to_graph.register
+def _(a: Alternate, coords: Set[Coord], graph: Graph) -> Set[Coord]:
+    res = set()
+    for alt in a.alt:
+        res.update(add_to_graph(alt, coords, graph))
+
+    return res
 
 
 def shortest_paths(graph):
@@ -194,4 +213,4 @@ def test_part1():
 
 def test_part2():
     regex = read_input()
-    print(part2(regex))
+    assert part1(regex) == 8600
