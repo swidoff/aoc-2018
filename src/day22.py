@@ -3,8 +3,8 @@ from __future__ import annotations
 import dataclasses
 import heapq
 from dataclasses import dataclass
-from enum import Enum
 from functools import lru_cache
+from typing import Tuple
 
 
 @lru_cache(maxsize=None)
@@ -41,8 +41,8 @@ def part1(target_x: int, target_y, depth: int) -> int:
 
 def print_cave(me_x: int, me_y: int, target_x: int, target_y, depth: int):
     print()
-    for y in range(0, target_y + 1):
-        for x in range(0, target_x + 1):
+    for y in range(0, target_y + 1 + target_y // 2):
+        for x in range(0, target_x + 1 + target_x // 2):
             if x == 0 and y == 0:
                 ch = "M"
             elif x == me_x and y == me_y:
@@ -85,49 +85,58 @@ TOOLS_IN_REGION = [
 @dataclass(frozen=True, order=True)
 class State:
     time: int
-    distance: int
+    node: Node = dataclasses.field(compare=False)
+    path: Tuple[Tuple[int, int]] = dataclasses.field(compare=False, default_factory=tuple)
+
+
+@dataclass(frozen=True, order=True)
+class Node:
     x: int
     y: int
     tool: int
 
 
-def part2(target_x: int, target_y, depth: int) -> int:
+def part2(target_x: int, target_y, depth: int) -> State:
     q = []
-    initial_state = State(0, target_x + target_y, 0, 0, 2)
-    seen = {initial_state}
+    initial_node = Node(0, 0, 2)
+    target_node = Node(target_x, target_y, 2)
+    initial_state = State(0, initial_node)
+    seen = {initial_node: 0}
     heapq.heappush(q, initial_state)
 
     while q:
         state = heapq.heappop(q)
-        # print_cave(state.x, state.y, target_x, target_y, depth)
-
-        if state.x == target_x and state.y == target_y and state.tool == 2:
-            return state.time
+        node = state.node
+        if state.node == target_node:
+            return state
         else:
-            typ = region_type(state.x, state.y, target_x, target_y, depth)
+            typ = region_type(node.x, node.y, target_x, target_y, depth)
             for x_d, y_d in [(1, 0), (0, 1), (0, 0), (0, -1), (-1, 0)]:
-                new_x = state.x + x_d
-                new_y = state.y + y_d
+                new_x = node.x + x_d
+                new_y = node.y + y_d
                 if new_x >= 0 and new_y >= 0:
                     new_typ = region_type(new_x, new_y, target_x, target_y, depth)
-                    new_distance = abs(target_x - new_x) + abs(target_y - new_y)
-                    if new_distance <= initial_state.distance:
+                    if new_x <= 10*target_x and new_y <= 10*target_y:
                         for new_tool in TOOLS_IN_REGION[new_typ]:
                             if new_tool in TOOLS_IN_REGION[typ]:
+                                new_node = Node(new_x, new_y, new_tool)
                                 new_time = state.time + 1
-                                if new_tool != state.tool:
+                                if new_tool != node.tool:
                                     new_time += 7
-                                new_state = State(new_time, new_distance, new_x, new_y, new_tool)
-                                if new_state not in seen:
-                                    heapq.heappush(q, new_state)
-                                    seen.add(new_state)
+                                if new_time < seen.get(new_node, 1_000_000_000):
+                                    heapq.heappush(q, State(new_time, new_node, state.path + ((node.x, node.y),)))
+                                    seen[new_node] = new_time
 
-    return -1
+    return initial_state
 
 
 def test_part2_example():
-    assert part2(10, 10, 510) == 45
+    state = part2(10, 10, 510)
+    for x, y in state.path:
+        print_cave(x, y, 10, 10, 510)
+
+    assert state.time == 45
 
 
 def test_part2():
-    print(part2(13, 726, 3066))
+    print(part2(13, 726, 3066).time)
