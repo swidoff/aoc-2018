@@ -21,17 +21,27 @@ class Nanobot(object):
     z: int
     radius: int
 
-    def in_range(self, x: int, y: int, z: int) -> bool:
+    def is_point_in_range(self, x: int, y: int, z: int) -> bool:
         return self.radius >= abs(x - self.x) + abs(y - self.y) + abs(z - self.z)
 
-    def overlaps(self, x1: int, x2: int, y1: int, y2: int, z1: int, z2: int) -> bool:
-        x_min = self.x - self.radius
-        x_max = self.x + self.radius
-        y_min = self.y - self.radius
-        y_max = self.y + self.radius
-        z_min = self.z - self.radius
-        z_max = self.z + self.radius
-        return x_max >= x1 and x_min <= x2 and y_max >= y1 and y_min <= y2 and z_max >= z1 and z_min <= z2
+    def is_cube_in_range(self, x1: int, x2: int, y1: int, y2: int, z1: int, z2: int) -> bool:
+        # Cube is in range if:
+        # 1. One of the cube corners is in range
+        cube_corners_in_range = any(
+            self.is_point_in_range(x, y, z)
+            for x in (x1, x2)
+            for y in (y1, y2)
+            for z in (z1, z2)
+        )
+
+        # 2. Any of the radius endpoints are in the cube.
+        endpoints_in_cube = any(
+            x1 <= self.x + x_d * sign <= x2 and y1 <= self.y + y_d * sign <= y2 and z1 <= self.z + z_d * sign <= z2
+            for sign in (-1, 1)
+            for x_d, y_d, z_d in ((1, 0, 0), (0, 1, 0), (0, 0, 1))
+        )
+
+        return cube_corners_in_range or endpoints_in_cube
 
 
 def parse_input(lines: List[str]) -> List[Nanobot]:
@@ -44,7 +54,7 @@ def parse_input(lines: List[str]) -> List[Nanobot]:
 
 def part1(nanobots: List[Nanobot]) -> int:
     strongest = max(nanobots, key=lambda n: n.radius)
-    return sum(1 for n in nanobots if strongest.in_range(n.x, n.y, n.z))
+    return sum(1 for n in nanobots if strongest.is_point_in_range(n.x, n.y, n.z))
 
 
 def test_part1_examples():
@@ -122,7 +132,7 @@ def part2(nanobots: List[Nanobot]):
         for x1, x2 in x_intervals:
             for y1, y2 in y_intervals:
                 for z1, z2 in z_intervals:
-                    bots = [n for n in nanobots if n.overlaps(x1, x2, y1, y2, z1, z2)]
+                    bots = [n for n in nanobots if n.is_cube_in_range(x1, x2, y1, y2, z1, z2)]
                     regions.append((x1, x2, y1, y2, z1, z2, len(bots)))
 
         max_bots = max(r[-1] for r in regions)
@@ -145,7 +155,7 @@ def part2(nanobots: List[Nanobot]):
     for x in range(min_x, max_x + 1):
         for y in range(min_y, max_y + 1):
             for z in range(min_z, max_z + 1):
-                num_bots = sum(1 for n in nanobots if n.in_range(x, y, z))
+                num_bots = sum(1 for n in nanobots if n.is_point_in_range(x, y, z))
                 point_dist = abs(x) + abs(y) + abs(z)
                 if num_bots > max_bots:
                     max_bots = num_bots
@@ -176,3 +186,4 @@ def test_part2():
     lines = read_input()
     nanobots = parse_input(lines)
     print(part2(nanobots))
+    # Too low: 127216436
