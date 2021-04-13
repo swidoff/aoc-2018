@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import dataclasses
+import math
 import operator
 from dataclasses import dataclass
+from functools import cached_property
 from typing import List, Tuple
 import re
 
@@ -20,6 +23,15 @@ class Nanobot(object):
 
     def in_range(self, x: int, y: int, z: int) -> bool:
         return self.radius >= abs(x - self.x) + abs(y - self.y) + abs(z - self.z)
+
+    def overlaps(self, x1: int, x2: int, y1: int, y2: int, z1: int, z2: int) -> bool:
+        x_min = self.x - self.radius
+        x_max = self.x + self.radius
+        y_min = self.y - self.radius
+        y_max = self.y + self.radius
+        z_min = self.z - self.radius
+        z_max = self.z + self.radius
+        return x_max >= x1 and x_min <= x2 and y_max >= y1 and y_min <= y2 and z_max >= z1 and z_min <= z2
 
 
 def parse_input(lines: List[str]) -> List[Nanobot]:
@@ -56,18 +68,14 @@ def test_part1():
 
 
 def max_overlap(ranges: List[Tuple[int, int]]) -> Tuple[int, int, int]:
-    events = sorted((
-        (c, op)
-        for coord in ranges
-        for c, op in zip(coord, ['x', 'y'])
-    ))
+    events = sorted(((c, op) for coord in ranges for c, op in zip(coord, ["x", "y"])))
 
     count = 0
     max_count = 0
     ret_x, ret_y = 0, 0
     for c, op in events:
         initial_count = count
-        if op == 'x':
+        if op == "x":
             count += 1
         else:
             count -= 1
@@ -83,41 +91,57 @@ def max_overlap(ranges: List[Tuple[int, int]]) -> Tuple[int, int, int]:
 
 
 def part2(nanobots: List[Nanobot]):
-    x1, x2, count = max_overlap([(n.x - n.radius, n.x + n.radius) for n in nanobots])
-    print(x1, x2, count)
+    min_x = min(n.x - n.radius for n in nanobots)
+    max_x = max(n.x + n.radius for n in nanobots)
+    min_y = min(n.y - n.radius for n in nanobots)
+    max_y = max(n.y + n.radius for n in nanobots)
+    min_z = min(n.z - n.radius for n in nanobots)
+    max_z = max(n.z + n.radius for n in nanobots)
 
-    y1, y2, count = max_overlap([(n.y - n.radius, n.y + n.radius) for n in nanobots])
-    print(y1, y2, count)
+    last_best = None
+    while True:
+        regions = []
+        mid_x = (max_x + min_x) // 2
+        mid_y = (max_y + min_y) // 2
+        mid_z = (max_z + min_z) // 2
+        x_intervals = [(min_x, mid_x), (mid_x + 1, max_x)]
+        y_intervals = [(min_y, mid_y), (mid_y + 1, max_y)]
+        z_intervals = [(min_z, mid_z), (mid_z + 1, max_z)]
 
-    z1, z2, count = max_overlap([(n.z - n.radius, n.z + n.radius) for n in nanobots])
-    print(z1, z2, count)
+        for x1, x2 in x_intervals:
+            for y1, y2 in y_intervals:
+                for z1, z2 in z_intervals:
+                    bots = [n for n in nanobots if n.overlaps(x1, x2, y1, y2, z1, z2)]
+                    regions.append((x1, x2, y1, y2, z1, z2, len(bots)))
 
-    x_pos = {n.x for n in nanobots if x1 <= n.x <= x2}
-    y_pos = {n.y for n in nanobots if y1 <= n.y <= y2}
-    z_pos = {n.z for n in nanobots if z1 <= n.z <= z2}
+        max_bots = max(r[-1] for r in regions)
+        best_regions =[r for r in regions if r[-1] == max_bots]
+        if len(best_regions) > 1:
+            best_region = min(best_regions, key=lambda r: abs(r[0]) + abs(r[2]) + abs(r[4]))
+        else:
+            best_region = best_regions[0]
+
+        if last_best is not None and last_best == best_region:
+            break
+        else:
+            last_best = best_region
+
+        min_x, max_x, min_y, max_y, min_z, max_z, _ = best_region
 
     max_bots = 0
-    res_bots = 0
-    max_coord = None
-    for x in x_pos:
-        for y in y_pos:
-            for z in z_pos:
-                bots = [n for n in nanobots if n.in_range(x, y, z)]
-                num_bots = len(bots)
-                if num_bots >= max_bots:
-                    max_coord = (x, y, z, num_bots)
-                    max_bots = num_bots
-                    res_bots = bots
-
-
-    x_pos = {n.x for n in res_bots}
-    y_pos = {n.y for n in res_bots}
-    z_pos = {n.z for n in res_bots}
-    print(len(x_pos))
-    print(len(y_pos))
-    print(len(z_pos))
-
-    return max_coord
+    dist = 10000000
+    min_x, max_x, min_y, max_y, min_z, max_z, _ = best_region
+    for x in range(min_x, max_x + 3):
+        for y in range(min_y, max_y + 3):
+            for z in range(min_z, max_z + 3):
+                num_bots = sum(1 for n in nanobots if n.in_range(x, y, z))
+                point_dist = abs(x) + abs(y) + abs(z)
+                if num_bots > max_bots:
+                    max_bots = num_botsh
+                    dist = point_dist
+                elif num_bots == max_bots and point_dist < dist:
+                    dist = point_dist
+    return dist
 
 
 
@@ -129,6 +153,10 @@ pos=<14,14,14>, r=6
 pos=<50,50,50>, r=200
 pos=<10,10,10>, r=5""".splitlines()
     nanobots = parse_input(example)
+
+
+
+
     print(part2(nanobots))
     # assert part2(nanobots) == 36
 
