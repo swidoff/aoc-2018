@@ -101,12 +101,23 @@ def part2(nanobots: List[Nanobot]):
     last_best = None
     while True:
         regions = []
-        mid_x = (max_x + min_x) // 2
-        mid_y = (max_y + min_y) // 2
-        mid_z = (max_z + min_z) // 2
-        x_intervals = [(min_x, mid_x), (mid_x + 1, max_x)]
-        y_intervals = [(min_y, mid_y), (mid_y + 1, max_y)]
-        z_intervals = [(min_z, mid_z), (mid_z + 1, max_z)]
+        if max_x - min_x > 2:
+            mid_x = (max_x + min_x) // 2
+            x_intervals = [(min_x, mid_x), (mid_x + 1, max_x)]
+        else:
+            x_intervals = [(min_x, max_x)]
+
+        if max_y - min_y > 2:
+            mid_y = (max_y + min_y) // 2
+            y_intervals = [(min_y, mid_y), (mid_y + 1, max_y)]
+        else:
+            y_intervals = [(min_y, max_y)]
+
+        if max_z - min_z > 2:
+            mid_z = (max_z + min_z) // 2
+            z_intervals = [(min_z, mid_z), (mid_z + 1, max_z)]
+        else:
+            z_intervals = [(min_z, max_z)]
 
         for x1, x2 in x_intervals:
             for y1, y2 in y_intervals:
@@ -131,13 +142,13 @@ def part2(nanobots: List[Nanobot]):
     max_bots = 0
     dist = 10000000
     min_x, max_x, min_y, max_y, min_z, max_z, _ = best_region
-    for x in range(min_x, max_x + 3):
-        for y in range(min_y, max_y + 3):
-            for z in range(min_z, max_z + 3):
+    for x in range(min_x, max_x + 1):
+        for y in range(min_y, max_y + 1):
+            for z in range(min_z, max_z + 1):
                 num_bots = sum(1 for n in nanobots if n.in_range(x, y, z))
                 point_dist = abs(x) + abs(y) + abs(z)
                 if num_bots > max_bots:
-                    max_bots = num_botsh
+                    max_bots = num_bots
                     dist = point_dist
                 elif num_bots == max_bots and point_dist < dist:
                     dist = point_dist
